@@ -33,3 +33,684 @@
 :root[data-theme="dark"] {
   --bg: #11151b; --rail: #181d25; --ink: #e5eaf0; --muted: #8f9aa9; --line: #29313c;
   --accent: #84a0ff; --cut: #ff6c4f; --chip: #212833; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body); }
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 360px; height: 100%; }
+.stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; touch-action: none; }
+.stage canvas { display: block; width: 100%; height: 100%; outline: none; }
+.hud {
+  position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: 14px; right: 16px;
+  display: flex; gap: 12px; flex-wrap: wrap; align-items: center; pointer-events: none;
+  font: 12px/1.4 var(--mono); color: var(--muted);
+}
+.hud .live { color: var(--cut); }
+.callout {
+  position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); top: 16px; max-width: min(440px, calc(100% - 32px));
+  padding: 10px 14px; border-radius: 10px; background: var(--rail); border: 1px solid var(--line);
+  font-size: 13.5px; line-height: 1.45; transition: opacity .32s var(--ease-out), transform .32s var(--ease-out), filter .32s var(--ease-out);
+}
+.callout[data-off] { opacity: 0; transform: translateY(-6px); filter: blur(2px); pointer-events: none; }
+.rail {
+  background: var(--rail); border-left: 1px solid var(--line); overflow-y: auto; min-width: 0;
+  padding-block: 22px 28px; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px;
+}
+h1 { font: 700 30px/1.05 var(--display); letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+.lede { margin: 6px 0 0; color: var(--muted); max-width: 34em; }
+section { display: flex; flex-direction: column; gap: 10px; }
+.label { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+.seg { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 3px; background: var(--chip); border-radius: 9px; }
+.seg button { border: 0; background: transparent; color: var(--ink); font: 500 14px var(--mono); padding: 7px 0; border-radius: 7px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--rail); box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 0 0 1px var(--line); }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn {
+  appearance: none; border: 1px solid var(--line); background: var(--rail); color: var(--ink);
+  font: 500 13.5px/1.25 var(--body); padding: 10px 12px; border-radius: 9px; cursor: pointer; text-align: left;
+  transition: transform .14s var(--ease-out), background-color .14s, border-color .14s;
+}
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--cut); border-color: var(--cut); color: #fff; }
+.btn.primary:hover:not(:disabled) { border-color: var(--ink); }
+.btn small { display: block; font: 400 11.5px/1.3 var(--mono); opacity: .8; margin-top: 2px; }
+.btn.wide { grid-column: 1 / -1; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.slider { display: grid; grid-template-columns: 88px minmax(0, 1fr) 44px; align-items: center; gap: 10px; font-size: 13px; }
+.slider output { font: 12px var(--mono); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--cut); }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.stats div { background: var(--rail); padding: 9px 10px; }
+.stats dt { font: 500 10.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.stats dd { margin: 6px 0 0; font: 600 20px/1 var(--display); font-variant-numeric: tabular-nums; }
+.pieces { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pieces li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 10px; align-items: start; animation: rise .36s var(--ease-out) both; }
+.pieces .sw { width: 14px; height: 14px; border-radius: 3px; margin-top: 3px; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .15); }
+.pieces b { font-weight: 600; }
+.pieces span { display: block; font: 12px/1.45 var(--mono); color: var(--muted); }
+.link { font-size: 13px; margin: 0; }
+@keyframes rise { from { opacity: 0; transform: translateY(4px); filter: blur(2px); } }
+.foot { margin-top: auto; font-size: 12px; color: var(--muted); }
+.foot p { margin: 0; }
+@media (max-width: 820px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 56svh auto; height: auto; }
+  html, body { height: auto; }
+  .rail { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  h1 { font-size: 26px; }
+}
+@media (max-width: 380px) { .btns { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2, 1fr); } }
+@media (prefers-reduced-motion: reduce) {
+  .callout, .btn { transition: opacity .2s linear; }
+  .callout[data-off] { transform: none; filter: none; }
+  .pieces li { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="stage" id="stage">
+    <canvas id="c" aria-label="3D view of the paper strip. Drag to rotate, scroll or pinch to zoom."></canvas>
+    <div class="callout" id="callout" data-off></div>
+    <div class="hud"><span>drag to orbit · scroll to zoom</span><span class="live" id="hudLive"></span></div>
+  </div>
+
+  <aside class="rail">
+    <header>
+      <h1>Möbius Bench</h1>
+      <p class="lede">A paper loop given one half-twist has a single side and a single edge. Twist it, cut it, pull the pieces apart, and see what you really get.</p>
+    </header>
+
+    <section aria-labelledby="l-twist">
+      <span class="label" id="l-twist">Half-twists before taping the ends</span>
+      <div class="seg" id="twists" role="group" aria-labelledby="l-twist"></div>
+      <p class="hint" id="twistHint"></p>
+    </section>
+
+    <section aria-labelledby="l-cut">
+      <span class="label" id="l-cut">Scissors</span>
+      <div class="btns">
+        <button class="btn primary" id="cutMid">Cut down the middle<small>halfway across</small></button>
+        <button class="btn primary" id="cutThird">Cut a third in<small>⅓ of the width</small></button>
+      </div>
+      <div class="slider"><label for="cutP">Cut progress</label><input type="range" id="cutP" min="0" max="1000" value="0" disabled><output id="cutPOut">—</output></div>
+      <div class="slider"><label for="sepR">Pull apart</label><input type="range" id="sepR" min="0" max="1000" value="0"><output id="sepOut">0%</output></div>
+      <p class="hint">Each cut goes through every piece on the bench. Drag the sliders to scrub the cut or slide the pieces apart.</p>
+    </section>
+
+    <section aria-labelledby="l-probe">
+      <span class="label" id="l-probe">Probe the surface</span>
+      <div class="btns">
+        <button class="btn" id="paint">Paint one side<small>brush never crosses an edge</small></button>
+        <button class="btn" id="ant">Send an ant<small>walks the centre line</small></button>
+        <button class="btn" id="trace">Trace the edges<small>colour each boundary</small></button>
+        <button class="btn" id="reset">Start over<small>fresh uncut strip</small></button>
+      </div>
+    </section>
+
+    <section aria-labelledby="l-read" aria-live="polite">
+      <span class="label" id="l-read">What's on the bench</span>
+      <dl class="stats">
+        <div><dt>Pieces</dt><dd id="sPieces">1</dd></div>
+        <div><dt>Sides</dt><dd id="sSides">1</dd></div>
+        <div><dt>Edges</dt><dd id="sEdges">1</dd></div>
+        <div><dt>Linked</dt><dd id="sLink">—</dd></div>
+      </dl>
+      <ul class="pieces" id="pieceList"></ul>
+      <p class="link" id="linkText"></p>
+    </section>
+
+    <footer class="foot">
+      <p>Geometry: x = (R + v·cos θ) cos u, y = v·sin θ, z = (R + v·cos θ) sin u, with θ = k·u/2. Measurements assume a 28 cm × 3 cm paper strip. Pulling apart is a continuous deformation, so pieces never pass through each other and links and knots are preserved.</p>
+    </footer>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(() => {
+  const TAU = Math.PI * 2;
+  const R = 1.5;            // radius of the strip's centre circle
+  const W = 0.5;            // half-width of the strip
+  const PHI = Math.PI / 2;  // ribbon starts vertical at u = 0
+  const GAP = 0.028;        // how far each cut edge pulls back
+  const LEN_CM = 28, WID_CM = 3;
+  const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
+  const PAPER = lin('#efe3c4');
+  const PALETTE = ['#f2c14e', '#5aa6e8', '#62c08e', '#ef86ad', '#a487ea', '#f39a57', '#46bfc7', '#c6d25a'].map(lin);
+  const PAINT = lin('#2b55d8');
+  const EDGE_A = lin('#d9432a'), EDGE_B = lin('#2b55d8'), EDGE_PLAIN = lin('#3a3226');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+  const $ = id => document.getElementById(id);
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const smooth = x => x * x * (3 - 2 * x);
+  const easeOut = x => 1 - Math.pow(1 - x, 3);
+
+  // ---------- state ----------
+  let k = 1;
+  let pieces = [];
+  let cut = null;       // { p, curves:[{t, len}], mode, from }
+  let rounds = 0;
+  let sep = 0;
+  let paintQ = 0, paintOn = false;
+  let ant = null;       // { q }
+  let trace = null;     // { q }
+  const tweens = [];
+
+  const oneSided = pc => (k * pc.m) % 2 === 1;
+  const loopLen = pc => TAU * pc.m;
+
+  // ---------- geometry ----------
+  // Position and normal of the strip surface at (s, t). t is measured in the original strip's
+  // width coordinate; lam spreads piece centres apart along the ribbon direction (an isotopy).
+  function surf(s, t, out, nout) {
+    const th = k * s / 2 + PHI, ct = Math.cos(th), st = Math.sin(th);
+    const cs = Math.cos(s), ss = Math.sin(s), rho = R + t * ct;
+    out.set(rho * cs, t * st, rho * ss);
+    if (nout) {
+      const dth = k / 2;
+      const sx = -t * st * dth * cs - rho * ss, sy = t * ct * dth, sz = -t * st * dth * ss + rho * cs;
+      const tx = ct * cs, ty = st, tz = ct * ss;
+      nout.set(sy * tz - sz * ty, sz * tx - sx * tz, sx * ty - sy * tx).normalize();
+    }
+    return out;
+  }
+  function lamFor() {
+    let lim = 4.5;
+    for (const pc of pieces) {
+      const mid = (pc.a + pc.b) / 2, h = (pc.b - pc.a) / 2;
+      if (Math.abs(mid) > 1e-6) lim = Math.min(lim, (0.56 * R - h) / Math.abs(mid));
+    }
+    return 1 + smooth(sep) * (Math.max(1, lim) - 1);
+  }
+  const shiftT = (pc, t, lam) => { const mid = (pc.a + pc.b) / 2; return lam * mid + (t - mid); };
+
+  function edgeGap(e, s) {
+    if (!e) return 0;
+    if (e === 'done' || cut.p >= 1) return GAP;
+    const sig = (e.per ? s % e.per : s) + e.off;
+    return GAP * smooth(clamp((cut.p * e.len - sig) / 0.22, 0, 1));
+  }
+
+  // ---------- three.js scene ----------
+  const stage = $('stage'), canvas = $('c');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 100);
+  camera.position.set(0.5, 4.1, 6.6);
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.minDistance = 2.5; controls.maxDistance = 14; controls.enablePan = false;
+  controls.autoRotate = !reduced.matches; controls.autoRotateSpeed = 0.55;
+  controls.addEventListener('start', () => { controls.autoRotate = false; });
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x6a7686, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 0.7); key.position.set(3, 6, 4); scene.add(key);
+  const rim = new THREE.DirectionalLight(0xffffff, 0.25); rim.position.set(-4, -2, -3); scene.add(rim);
+
+  const world = new THREE.Group(); scene.add(world);
+  const matF = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.FrontSide, roughness: 0.85, metalness: 0 });
+  const matB = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.BackSide, roughness: 0.85, metalness: 0 });
+  const edgeMat = () => new THREE.LineBasicMaterial({ color: 0x3a3226, transparent: true, opacity: 0.55 });
+  const guideMat = new THREE.LineBasicMaterial({ color: 0xd9432a, transparent: true, opacity: 0.9 });
+  const NT = 8;
+
+  function buildPieceMeshes(pc) {
+    const ns = 220 * pc.m, nv = (ns + 1) * (NT + 1);
+    const pos = new THREE.BufferAttribute(new Float32Array(nv * 3), 3);
+    const nor = new THREE.BufferAttribute(new Float32Array(nv * 3), 3);
+    const idx = [];
+    for (let i = 0; i < ns; i++) for (let j = 0; j < NT; j++) {
+      const a = i * (NT + 1) + j, b = a + NT + 1;
+      idx.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+    const mk = mat => {
+      const g = new THREE.BufferGeometry();
+      g.setIndex(idx); g.setAttribute('position', pos); g.setAttribute('normal', nor);
+      g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(nv * 3), 3));
+      const m = new THREE.Mesh(g, mat); world.add(m); return m;
+    };
+    const line = () => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array((ns + 1) * 3), 3));
+      const l = new THREE.Line(g, edgeMat()); world.add(l); return l;
+    };
+    Object.assign(pc, { ns, pos, nor, front: mk(matF), back: mk(matB), loLine: line(), hiLine: line() });
+  }
+  function disposePiece(pc) {
+    for (const o of [pc.front, pc.back, pc.loLine, pc.hiLine]) { world.remove(o); o.geometry.dispose(); }
+    pc.loLine.material.dispose(); pc.hiLine.material.dispose();
+  }
+
+  const P = new THREE.Vector3(), N = new THREE.Vector3(), C = new THREE.Color();
+  function updatePiece(pc, lam) {
+    const { ns, pos, nor } = pc, L = loopLen(pc);
+    const cf = pc.front.geometry.attributes.color, cb = pc.back.geometry.attributes.color;
+    const one = oneSided(pc), Lp = L * (one ? 2 : 1), qs = paintQ * Lp;
+    const lo = pc.loLine.geometry.attributes.position, hi = pc.hiLine.geometry.attributes.position;
+    for (let i = 0; i <= ns; i++) {
+      const s = (i / ns) * L;
+      const a = pc.a + edgeGap(pc.lo, s), b = pc.b - edgeGap(pc.hi, s);
+      const pf = paintOn ? smooth(clamp((qs - s) / 0.35, 0, 1)) : 0;
+      const pb = paintOn && one ? smooth(clamp((qs - s - L) / 0.35, 0, 1)) : 0;
+      for (let j = 0; j <= NT; j++) {
+        const t = a + (b - a) * (j / NT), v = i * (NT + 1) + j;
+        surf(s, shiftT(pc, t, lam), P, N);
+        pos.setXYZ(v, P.x, P.y, P.z); nor.setXYZ(v, N.x, N.y, N.z);
+        C.copy(pc.col).lerp(PAINT, pf * 0.85); cf.setXYZ(v, C.r, C.g, C.b);
+        C.copy(pc.col).lerp(PAINT, pb * 0.85); cb.setXYZ(v, C.r, C.g, C.b);
+      }
+      surf(s, shiftT(pc, a, lam), P); lo.setXYZ(i, P.x, P.y, P.z);
+      surf(s, shiftT(pc, b, lam), P); hi.setXYZ(i, P.x, P.y, P.z);
+    }
+    pos.needsUpdate = nor.needsUpdate = cf.needsUpdate = cb.needsUpdate = lo.needsUpdate = hi.needsUpdate = true;
+    pc.front.geometry.computeBoundingSphere();
+    pc.back.geometry.computeBoundingSphere();
+  }
+
+  // pencil line down the middle of the uncut strip, drawn on both faces
+  const pencilMat = new THREE.LineDashedMaterial({ color: 0x6b5e45, dashSize: 0.06, gapSize: 0.04, transparent: true, opacity: 0.8 });
+  const pencils = [1, -1].map(side => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(441 * 3), 3));
+    const l = new THREE.Line(g, pencilMat); l.userData.side = side; world.add(l); return l;
+  });
+  function updatePencil() {
+    const show = rounds === 0 && !paintOn;
+    pencils.forEach(l => {
+      l.visible = show;
+      if (!show || l.userData.done === k) return;
+      const a = l.geometry.attributes.position;
+      for (let i = 0; i <= 440; i++) { surf((i / 440) * TAU, 0, P, N); P.addScaledVector(N, 0.003 * l.userData.side); a.setXYZ(i, P.x, P.y, P.z); }
+      a.needsUpdate = true; l.computeLineDistances(); l.geometry.computeBoundingSphere(); l.userData.done = k;
+    });
+  }
+
+  // scissors: two blades meeting at a pivot, pointing along the cut
+  const scissorsPool = [];
+  function makeScissors() {
+    const g = new THREE.Group();
+    const steel = new THREE.MeshStandardMaterial({ color: 0xcfd5dc, metalness: 0.6, roughness: 0.3 });
+    const grip = new THREE.MeshStandardMaterial({ color: 0xd9432a, roughness: 0.6 });
+    const bladeGeo = new THREE.BoxGeometry(0.34, 0.016, 0.03); bladeGeo.translate(0.17, 0, 0);
+    const ringGeo = new THREE.TorusGeometry(0.045, 0.012, 8, 20);
+    const halves = [1, -1].map(sg => {
+      const h = new THREE.Group();
+      h.add(new THREE.Mesh(bladeGeo, steel));
+      const ring = new THREE.Mesh(ringGeo, grip); ring.position.set(-0.09, 0.03 * sg, 0); h.add(ring);
+      g.add(h); return h;
+    });
+    g.userData.halves = halves; g.scale.setScalar(1.5);
+    world.add(g); return g;
+  }
+  const guides = [];
+  const basis = new THREE.Matrix4(), X = new THREE.Vector3(), Y = new THREE.Vector3(), Z = new THREE.Vector3(), Q = new THREE.Vector3();
+
+  function updateScissors(lam, time) {
+    const curves = cut && cut.p < 1 ? cut.curves : [];
+    while (scissorsPool.length < curves.length) scissorsPool.push(makeScissors());
+    while (guides.length < curves.length) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(1201 * 3), 3));
+      const l = new THREE.Line(g, guideMat); world.add(l); guides.push(l);
+    }
+    scissorsPool.forEach((sc, i) => { sc.visible = i < curves.length; });
+    guides.forEach((g, i) => { g.visible = i < curves.length; });
+    curves.forEach((cv, i) => {
+      const u = cut.p * cv.len, t = shiftT(cv, cv.t, lam);
+      surf(u, t, P, N); surf(u + 0.01, t, Q);
+      X.subVectors(Q, P).normalize(); Y.copy(N); Z.crossVectors(X, Y).normalize();
+      const sc = scissorsPool[i];
+      basis.makeBasis(X, Y, Z); sc.position.copy(P); sc.quaternion.setFromRotationMatrix(basis);
+      const open = reduced.matches ? 0.2 : 0.12 + 0.14 * Math.abs(Math.sin(time * 9));
+      sc.userData.halves[0].rotation.z = open; sc.userData.halves[1].rotation.z = -open;
+      // dashed-looking guide: the stretch of cut line still ahead of the blades
+      const ga = guides[i].geometry.attributes.position, n = 1200;
+      for (let j = 0; j <= n; j++) {
+        const uu = u + (cv.len - u) * (j / n);
+        surf(uu, t, P, N); P.addScaledVector(N, 0.004);
+        ga.setXYZ(j, P.x, P.y, P.z);
+      }
+      ga.needsUpdate = true; guides[i].geometry.computeBoundingSphere();
+    });
+  }
+
+  // ant: three beads riding just above the surface
+  const antGroup = new THREE.Group(); world.add(antGroup); antGroup.visible = false;
+  const antMat = new THREE.MeshStandardMaterial({ color: 0x1b1b1f, roughness: 0.5 });
+  [0.04, 0.03, 0.035].forEach((r, i) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), antMat); m.position.x = -i * 0.065; antGroup.add(m); });
+  const trailGeo = new THREE.BufferGeometry();
+  trailGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(2001 * 3), 3));
+  const trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color: 0x1b1b1f })); world.add(trail); trail.visible = false;
+
+  function antPath(lam) {
+    const pc = pieces[0], one = oneSided(pc), mid = (pc.a + pc.b) / 2;
+    return { pc, len: loopLen(pc) * (one ? 2 : 1), t: shiftT(pc, mid, lam) };
+  }
+  function updateAnt(lam) {
+    if (!ant) { antGroup.visible = trail.visible = false; return; }
+    const { len, t } = antPath(lam), u = ant.q * len;
+    surf(u, t, P, N); surf(u + 0.01, t, Q);
+    X.subVectors(Q, P).normalize(); Y.copy(N); Z.crossVectors(X, Y).normalize();
+    basis.makeBasis(X, Y, Z); antGroup.quaternion.setFromRotationMatrix(basis);
+    antGroup.position.copy(P).addScaledVector(N, 0.042);
+    antGroup.visible = trail.visible = true;
+    const ta = trailGeo.attributes.position, n = 2000, upto = Math.max(1, Math.round(ant.q * n));
+    for (let j = 0; j <= upto; j++) { surf((j / n) * len, t, P, N); P.addScaledVector(N, 0.012); ta.setXYZ(j, P.x, P.y, P.z); }
+    ta.needsUpdate = true; trailGeo.setDrawRange(0, upto + 1); trailGeo.computeBoundingSphere();
+  }
+
+  // edge tracing: colour each boundary component, with a bead running along it
+  const beads = [];
+  function updateTrace(lam) {
+    let comps = [];
+    pieces.forEach((pc, i) => {
+      const one = oneSided(pc);
+      pc.loLine.material.color.copy(trace ? (one ? EDGE_A : EDGE_B) : EDGE_PLAIN);
+      pc.hiLine.material.color.copy(trace ? EDGE_A : EDGE_PLAIN);
+      pc.loLine.material.opacity = pc.hiLine.material.opacity = trace ? 1 : 0.55;
+      if (!trace) return;
+      const L = loopLen(pc);
+      if (one) comps.push({ pc, len: 2 * L, t: pc.b, gapSide: 'hi' });
+      else { comps.push({ pc, len: L, t: pc.b, gapSide: 'hi' }); comps.push({ pc, len: L, t: pc.a, gapSide: 'lo' }); }
+    });
+    while (beads.length < comps.length) {
+      const b = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 12), new THREE.MeshBasicMaterial({ color: 0xd9432a }));
+      world.add(b); beads.push(b);
+    }
+    beads.forEach((b, i) => { b.visible = i < comps.length; });
+    comps.forEach((c, i) => {
+      const u = trace.q * c.len;
+      const inset = c.gapSide === 'hi' ? -edgeGap(c.pc.hi, u % loopLen(c.pc)) : edgeGap(c.pc.lo, u % loopLen(c.pc));
+      surf(u, shiftT(c.pc, c.t + inset, lam), P);
+      beads[i].position.copy(P);
+      beads[i].material.color.copy(c.gapSide === 'lo' ? EDGE_B : EDGE_A);
+    });
+  }
+
+  // ---------- model operations ----------
+  function setPieces(list) {
+    pieces.forEach(disposePiece);
+    pieces = list;
+    pieces.forEach(buildPieceMeshes);
+  }
+  function freshStrip() {
+    cut = null; rounds = 0; sep = 0; paintOn = false; paintQ = 0; ant = null; trace = null;
+    tweens.length = 0;
+    setPieces([{ m: 1, a: -W, b: W, lo: null, hi: null, col: PAPER.clone(), target: PAPER.clone() }]);
+    syncUI(); callout('');
+  }
+  function finalizeCut() {
+    if (!cut) return;
+    cut.p = 1;
+    for (const pc of pieces) {
+      if (pc.lo && pc.lo !== 'done') pc.lo = 'done';
+      if (pc.hi && pc.hi !== 'done') pc.hi = 'done';
+    }
+  }
+
+  function doCut(mode) {
+    finalizeCut();
+    const out = [], curves = [], before = pieces.map(pc => ({ m: pc.m, one: oneSided(pc) }));
+    for (const pc of pieces) {
+      const L = loopLen(pc);
+      if (oneSided(pc)) {
+        const c = pc.b;
+        if (mode === 'middle') {
+          out.push({ m: 2 * pc.m, a: 0, b: c, lo: { off: 0, per: L, len: L }, hi: pc.hi });
+          curves.push({ a: pc.a, b: pc.b, t: 0, len: L });
+        } else {
+          const d = c / 3;
+          out.push({ m: pc.m, a: -d, b: d, lo: { off: L, per: 0, len: 2 * L }, hi: { off: 0, per: 0, len: 2 * L } });
+          out.push({ m: 2 * pc.m, a: d, b: c, lo: { off: 0, per: 0, len: 2 * L }, hi: pc.hi });
+          curves.push({ a: pc.a, b: pc.b, t: d, len: 2 * L });
+        }
+      } else {
+        const d = mode === 'middle' ? (pc.a + pc.b) / 2 : pc.a + (pc.b - pc.a) / 3;
+        out.push({ m: pc.m, a: pc.a, b: d, lo: pc.lo, hi: { off: 0, per: 0, len: L } });
+        out.push({ m: pc.m, a: d, b: pc.b, lo: { off: 0, per: 0, len: L }, hi: pc.hi });
+        curves.push({ a: pc.a, b: pc.b, t: d, len: L });
+      }
+    }
+    const startCol = pieces.length === 1 ? pieces[0].col.clone() : null;
+    // new pieces keep the colour of the piece they came from until the cut closes
+    let pi = 0;
+    for (const pc of pieces) {
+      const kids = oneSided(pc) && mode === 'middle' ? 1 : 2;
+      for (let j = 0; j < kids; j++) out[pi++].col = pc.col.clone();
+    }
+    out.forEach((pc, i) => { pc.target = PALETTE[i % PALETTE.length].clone(); });
+    rounds++;
+    paintOn = false; paintQ = 0; ant = null; trace = null;
+    setPieces(out);
+    cut = { p: 0, curves, mode, before };
+    const maxLen = Math.max(...curves.map(c => c.len));
+    const dur = reduced.matches ? 900 : 2600 * (maxLen / TAU);
+    tween(dur, x => { cut.p = x; }, () => { onCutDone(); }, x => x);
+    syncUI();
+    callout('');
+  }
+
+  function onCutDone() {
+    for (const pc of pieces) if (!pc.from) pc.from = pc.col.clone();
+    tween(reduced.matches ? 1 : 420, x => { for (const pc of pieces) pc.col.copy(pc.from).lerp(pc.target, easeOut(x)); });
+    setTimeout(() => { if (cut && cut.p >= 1 && sep < 0.01) animateSep(1); }, reduced.matches ? 0 : 450);
+    callout(cutStory());
+    syncUI();
+  }
+
+  function cutStory() {
+    const b = cut.before, n = pieces.length;
+    const anyOne = b.some(x => x.one);
+    if (b.length === 1 && b[0].one && cut.mode === 'middle')
+      return `Still one piece. A one-sided strip has no "other half" for its centre line to separate from, so the cut just opens it into a loop ${k === 1 ? 'twice as long, with two full twists' : 'twice as long, now knotted'}.`;
+    if (b.length === 1 && b[0].one)
+      return `The scissors went around twice before meeting their start. Out come two pieces: a thinner ${k === 1 ? 'Möbius strip' : 'one-sided band'} and a long two-sided loop, linked together.`;
+    if (b.length === 1)
+      return k === 0 ? 'An ordinary loop cuts into two ordinary loops, as you would expect.' : `Two loops, each keeping the parent's ${k} half-twists, and they are linked ${k / 2} time${k === 2 ? '' : 's'}.`;
+    return `${b.length} pieces went in, ${n} came out.${anyOne ? ' The one-sided piece stayed in one piece and doubled in length.' : ''}`;
+  }
+
+  // ---------- tweens ----------
+  function tween(ms, step, done, ease = easeOut) {
+    const tw = { t0: performance.now(), ms: Math.max(1, ms), step, done, ease };
+    tweens.push(tw); return tw;
+  }
+  let sepTween = null;
+  function animateSep(to, then) {
+    if (sepTween) tweens.splice(tweens.indexOf(sepTween), 1);
+    const from = sep;
+    if (Math.abs(to - from) < 1e-3) { sep = to; then && then(); return; }
+    sepTween = tween(reduced.matches ? 1 : 900 * Math.abs(to - from) + 200, x => { sep = from + (to - from) * x; }, () => { sepTween = null; then && then(); });
+  }
+  function runTweens(now) {
+    for (let i = tweens.length - 1; i >= 0; i--) {
+      const tw = tweens[i], x = clamp((now - tw.t0) / tw.ms, 0, 1);
+      tw.step(tw.ease(x));
+      if (x >= 1) { tweens.splice(i, 1); tw.done && tw.done(); }
+    }
+  }
+  const busy = () => cut && cut.p < 1 && tweens.length > 0;
+
+  // ---------- descriptions ----------
+  const KNOTS = { 1: 'unknotted', 3: 'tied in a trefoil knot', 5: 'tied in a cinquefoil (5₁) knot' };
+  function describe(pc) {
+    const one = oneSided(pc), lenCm = LEN_CM * pc.m, wCm = ((pc.b - pc.a) / (2 * W)) * WID_CM;
+    let name, twist;
+    if (one) {
+      name = k === 1 ? 'Möbius strip' : `One-sided band`;
+      twist = `${k} half-twist${k === 1 ? '' : 's'}`;
+    } else {
+      const h = k * pc.m * pc.m;
+      name = pc.m === 1 ? (k === 0 ? 'Plain loop' : 'Twisted loop') : 'Long loop';
+      twist = h === 0 ? 'no twist' : `${h} half-twists`;
+    }
+    const knot = pc.m === 2 ? KNOTS[k] || 'knotted' : 'unknotted';
+    return { name, detail: `${one ? '1 side · 1 edge' : '2 sides · 2 edges'} · ${twist}`, size: `${lenCm.toFixed(0)} cm long × ${wCm.toFixed(1)} cm wide · ${knot}` };
+  }
+  function linking() {
+    const pairs = [];
+    for (let i = 0; i < pieces.length; i++) for (let j = i + 1; j < pieces.length; j++)
+      pairs.push(k * pieces[i].m * pieces[j].m / 2);
+    return pairs;
+  }
+
+  // ---------- UI ----------
+  const seg = $('twists');
+  for (let i = 0; i <= 5; i++) {
+    const b = document.createElement('button');
+    b.textContent = i; b.setAttribute('aria-label', `${i} half-twist${i === 1 ? '' : 's'}`);
+    b.addEventListener('click', () => { k = i; freshStrip(); });
+    seg.appendChild(b);
+  }
+  const HINTS = ['A plain cylinder: two sides, two edges.', 'The classic Möbius strip: one side, one edge.', 'One full twist: two sides again, but the edges are linked.',
+    'Three half-twists: one-sided, and its edge is a trefoil knot.', 'Two full twists: two sides, edges linked twice.', 'Five half-twists: one-sided, its edge a cinquefoil knot.'];
+
+  function syncUI() {
+    [...seg.children].forEach((b, i) => b.setAttribute('aria-pressed', String(i === k)));
+    $('twistHint').textContent = HINTS[k];
+    const cutting = cut && cut.p < 1;
+    const tooThin = pieces.some(pc => pc.b - pc.a < 0.14);
+    $('cutMid').disabled = $('cutThird').disabled = rounds >= 3 || tooThin;
+    $('cutP').disabled = !cut;
+    $('paint').firstChild.textContent = paintOn ? 'Clear the paint' : 'Paint one side';
+    $('trace').firstChild.textContent = trace ? 'Hide edge colours' : 'Trace the edges';
+
+    const n = pieces.length, sidesArr = pieces.map(pc => oneSided(pc) ? 1 : 2);
+    $('sPieces').textContent = n;
+    $('sSides').textContent = n === 1 ? sidesArr[0] : sidesArr.reduce((a, b) => a + b, 0);
+    $('sEdges').textContent = pieces.reduce((a, pc) => a + (oneSided(pc) ? 1 : 2), 0);
+    const lk = linking(), linked = lk.filter(x => x > 0);
+    $('sLink').textContent = n === 1 ? '—' : linked.length ? (n === 2 ? `×${lk[0]}` : `${linked.length}/${lk.length}`) : 'no';
+    $('linkText').textContent = n === 1 ? (rounds ? '' : 'Uncut. The dashed pencil line marks the middle of the strip.')
+      : !linked.length ? 'None of the pieces are linked; they slide apart freely.'
+      : n === 2 ? `The two pieces are linked: one passes through the other ${lk[0]} time${lk[0] === 1 ? '' : 's'} (linking number ${lk[0]}).`
+      : `${linked.length} of ${lk.length} pairs are linked${new Set(linked).size === 1 ? `, each with linking number ${linked[0]}` : ''}.`;
+
+    const list = $('pieceList'); list.textContent = '';
+    pieces.forEach(pc => {
+      const d = describe(pc), li = document.createElement('li');
+      const sw = document.createElement('i'); sw.className = 'sw';
+      sw.style.background = '#' + (cut && cut.p >= 1 ? pc.target : pc.col).getHexString();
+      const box = document.createElement('div');
+      box.innerHTML = `<b></b><span></span><span></span>`;
+      box.children[0].textContent = d.name; box.children[1].textContent = d.detail; box.children[2].textContent = d.size;
+      li.append(sw, box); list.appendChild(li);
+    });
+  }
+
+  let story = 0;
+  const latest = () => { const id = ++story; return text => { if (id === story) callout(text, true); }; };
+  function callout(text, keep) {
+    const el = $('callout');
+    if (!keep) story++;
+    if (!text) { el.setAttribute('data-off', ''); return; }
+    el.textContent = text; el.removeAttribute('data-off');
+  }
+
+  $('cutMid').addEventListener('click', () => startCut('middle'));
+  $('cutThird').addEventListener('click', () => startCut('third'));
+  function startCut(mode) {
+    if (busy()) { finalizeCut(); tweens.length = 0; onCutDone(); }
+    animateSep(0, () => doCut(mode));
+  }
+  $('cutP').addEventListener('input', e => {
+    if (!cut) return;
+    tweens.length = 0; sepTween = null;
+    cut.p = e.target.value / 1000;
+    if (cut.p >= 1) onCutDone(); else { for (const pc of pieces) pc.col.copy(pc.from || pc.col); sep = 0; }
+  });
+  $('sepR').addEventListener('input', e => {
+    if (sepTween) { tweens.splice(tweens.indexOf(sepTween), 1); sepTween = null; }
+    if (cut && cut.p < 1) { e.target.value = 0; callout('Finish the cut before pulling the pieces apart.'); return; }
+    sep = e.target.value / 1000;
+  });
+  $('paint').addEventListener('click', () => {
+    if (paintOn) { paintOn = false; paintQ = 0; callout(''); syncUI(); return; }
+    finalizeCut(); paintOn = true; paintQ = 0;
+    const one = pieces.some(oneSided), allOne = pieces.every(oneSided);
+    const laps = one ? 2 : 1;
+    callout(one ? 'Painting along one face. Watch where the brush goes after the first lap…' : 'Painting along one face…');
+    const say = latest();
+    tween(reduced.matches ? 400 : 3000 * laps, x => { paintQ = x; }, () => {
+      say(allOne && pieces.length === 1
+        ? 'The brush never crossed an edge, yet every bit of paper is now blue. There is only one side to paint.'
+        : one ? 'The one-sided piece got painted all over in two laps. The two-sided pieces still have a bare side.'
+        : 'The brush came back to where it started after one lap. The other side is still bare paper.');
+    }, x => x);
+    syncUI();
+  });
+  $('ant').addEventListener('click', () => {
+    finalizeCut();
+    ant = { q: 0 };
+    const { pc } = antPath(1), one = oneSided(pc);
+    const laps = pc.m * (one ? 2 : 1);
+    callout('The ant walks the centre line of the first piece and never steps over an edge.');
+    const say = latest();
+    tween(reduced.matches ? 600 : 3600 * laps, x => { ant.q = x; }, () => {
+      say(one
+        ? `The ant walked ${laps} laps before it was home. Halfway through it passed its starting point on the opposite face of the paper, without ever crossing an edge.`
+        : `The ant got home after ${laps === 1 ? 'one lap' : laps + ' laps'}, on the same face it started on.`);
+    }, x => x);
+  });
+  $('trace').addEventListener('click', () => {
+    if (trace) { trace = null; syncUI(); callout(''); return; }
+    finalizeCut();
+    trace = { q: 0 };
+    const total = pieces.reduce((a, pc) => a + (oneSided(pc) ? 1 : 2), 0);
+    tween(reduced.matches ? 400 : 5200, x => { trace.q = x; }, null, x => x);
+    callout(pieces.length === 1 && oneSided(pieces[0])
+      ? 'One bead, one colour. It runs along the top edge, then carries on along the bottom: they are the same edge.'
+      : `${total} edge${total === 1 ? '' : 's'} in all. Each bead runs once around its own edge.`);
+    syncUI();
+  });
+  $('reset').addEventListener('click', freshStrip);
+
+  // ---------- render loop ----------
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    renderer.setSize(w, h, false); camera.aspect = w / h;
+    camera.position.setLength(w / h < 0.9 ? 9.4 : camera.position.length());
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage); resize();
+  reduced.addEventListener('change', () => { if (reduced.matches) controls.autoRotate = false; });
+
+  let lastCutUI = -1;
+  function frame(now) {
+    runTweens(now);
+    const lam = lamFor();
+    for (const pc of pieces) updatePiece(pc, lam);
+    updateScissors(lam, now / 1000);
+    updateAnt(lam);
+    updatePencil();
+    updateTrace(lam);
+    const cp = cut ? cut.p : -1;
+    if (cp !== lastCutUI) {
+      lastCutUI = cp;
+      $('cutP').value = cut ? Math.round(cut.p * 1000) : 0;
+      $('cutPOut').textContent = cut ? Math.round(cut.p * 100) + '%' : '—';
+      if (cut && cut.p < 1) {
+        const lapsTotal = cut.curves.length ? Math.round(Math.max(...cut.curves.map(c => c.len)) / TAU) : 1;
+        const lap = Math.min(lapsTotal, Math.floor(cut.p * lapsTotal) + 1);
+        $('hudLive').textContent = `cutting · lap ${lap} of ${lapsTotal} around the centre`;
+      } else $('hudLive').textContent = '';
+    }
+    $('sepR').value = Math.round(sep * 1000);
+    $('sepOut').textContent = Math.round(sep * 100) + '%';
+    controls.update();
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  freshStrip();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
