@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Möbius Bench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one-screen bench. 3D stage fills the left, a narrow lab-notebook rail on the right; stacks on phones. */
+:root {
+  --bg: #e9edf1;
+  --rail: #f8f9fb;
+  --ink: #18202b;
+  --muted: #5a6574;
+  --line: #d3dae2;
+  --accent: #2b55d8;
+  --cut: #d9432a;
+  --chip: #eef1f5;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151b; --rail: #181d25; --ink: #e5eaf0; --muted: #8f9aa9; --line: #29313c;
+    --accent: #84a0ff; --cut: #ff6c4f; --chip: #212833; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151b; --rail: #181d25; --ink: #e5eaf0; --muted: #8f9aa9; --line: #29313c;
+  --accent: #84a0ff; --cut: #ff6c4f; --chip: #212833; color-scheme: dark;
